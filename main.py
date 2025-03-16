@@ -11,7 +11,7 @@ SOURCES = [
     "https://www.stream2watch.ws/",
     "https://www.vipbox.tv/",
     "https://www.cricfree.sc/",
-    "https://soccerstreams100.com/"
+    # "https://soccerstreams100.com/"  # Geçici olarak kaldırdık
 ]
 
 # Asenkron istekler ile veri çekme ve AceStream linklerini bulma
