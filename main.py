@@ -8,16 +8,19 @@ TELEGRAM_API_TOKEN = "8193746104:AAHsdMqrC-CO0ZGe0hnj18mgTcuTcxrH0-I"
 
 async def search_ace_stream(query):
     """search-ace.stream'den maç araması yapar"""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
     try:
         url = f"https://search-ace.stream/?q={query}"
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         links = []
         for elem in soup.find_all('a', href=True):
             href = elem['href']
             if "acestream://" in href:
-                title = elem.get_text(strip=True) or "Maç"
+                title = elem.get_text(strip=True) or query
                 links.append((href, title))
         return links
     except Exception as e:
@@ -28,13 +31,14 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     sources = [
         "https://soccer9.sportshub.stream/",
         "https://acestream.me/",
-        "https://www.acestream.live/"  # Yeni kaynak
+        "https://www.acestream.live/"
     ]
     try:
         now_tr = datetime.now(tz=None)  # Türkiye saati (UTC+3)
         events = []
-        
-        # Her kaynağı ayrı ayrı try-except ile çek
+        live_matches = []  # search-ace.stream için maç isimleri
+
+        # Web kaynaklarından veri çek
         for url in sources:
             try:
                 response = requests.get(url, timeout=10)
@@ -48,6 +52,11 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     
                     if "sportshub.stream/event" in href and "live" in (title.lower() if title else ""):
                         events.append((href, title))
+                        if title:
+                            # Canlı maç isimlerini al, search-ace.stream'de aratmak için
+                            teams = title.replace("live", "").strip().split(" – ")
+                            if len(teams) >= 1:
+                                live_matches.append(teams[0])  # İlk takımı al
                     elif "acestream.me" in url and "acestream://" in href:
                         events.append((href, title))
                     elif "acestream.live" in url and "acestream://" in href:
@@ -56,10 +65,9 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 print(f"{url} için hata: {str(e)}")
                 continue
 
-        # search-ace.stream'den ek arama
-        search_queries = ["Sevilla", "Arsenal", "Bologna"]
-        for query in search_queries:
-            search_results = await search_ace_stream(query)
+        # search-ace.stream'den canlı maçlar için arama yap
+        for match in live_matches[:5]:  # İlk 5 maçla sınırlı, performansı korumak için
+            search_results = await search_ace_stream(match)
             events.extend(search_results)
 
         if not events:
