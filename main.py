@@ -15,9 +15,9 @@ SOURCES = [
 ]
 
 # Asenkron istekler ile veri çekme ve AceStream linklerini bulma
-async def fetch_acestream_links(session, url):
+async def fetch_acestream_links(session, url, retries=3):
     try:
-        async with session.get(url, timeout=10) as response:
+        async with session.get(url, timeout=30) as response:  # Timeout artırıldı
             if response.status == 200:
                 page = await response.text()
                 soup = BeautifulSoup(page, 'html.parser')
@@ -42,7 +42,11 @@ async def fetch_acestream_links(session, url):
                 return []
     except Exception as e:
         print(f"Error fetching {url}: {str(e)}")
-        return []
+        if retries > 0:
+            print(f"Retrying {url} ({retries} attempts left)...")
+            return await fetch_acestream_links(session, url, retries - 1)
+        else:
+            return []
 
 # Telegram komutu için main fonksiyon
 async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
