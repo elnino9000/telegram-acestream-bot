@@ -24,14 +24,17 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("Şu anda canlı etkinlik bulunamadı.")
             return
 
-        # Tekrarları önlemek için set kullanıyoruz
+        # Tekrarları önlemek için normalleştirilmiş başlıkları kullan
         seen_titles = set()
         message = "Canlı Maçlar ve AceStream Linkleri:\n"
         found_links = False
         for event_url, event_title in events:
-            if event_title in seen_titles:
+            # Başlığı normalleştir: küçük harf, boşlukları ve gereksiz kelimeleri temizle
+            normalized_title = event_title.lower().replace("live", "").replace(" ", "")
+            if normalized_title in seen_titles:
                 continue  # Tekrar eden maçı atla
-            seen_titles.add(event_title)
+            seen_titles.add(normalized_title)
+
             try:
                 full_url = f"https://sportshub.stream{event_url}" if not event_url.startswith("http") else event_url
                 event_response = requests.get(full_url)
