@@ -28,32 +28,36 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     sources = [
         "https://soccer9.sportshub.stream/",
         "https://acestream.me/",
-        "https://acestreamchannel.blogspot.com/"
+        "https://www.acestream.live/"  # Yeni kaynak
     ]
     try:
         now_tr = datetime.now(tz=None)  # Türkiye saati (UTC+3)
         events = []
         
-        # Web kaynaklarından veri çek
+        # Her kaynağı ayrı ayrı try-except ile çek
         for url in sources:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
+            try:
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, 'html.parser')
 
-            event_elements = soup.find_all('a', href=True)
-            for elem in event_elements:
-                href = elem['href']
-                title = elem.get_text(strip=True) or None
-                
-                if "sportshub.stream/event" in href and "live" in (title.lower() if title else ""):
-                    events.append((href, title))
-                elif "acestream.me" in url and "acestream://" in href:
-                    events.append((href, title))
-                elif "blogspot.com" in url and "acestream://" in href:
-                    events.append((href, title))
+                event_elements = soup.find_all('a', href=True)
+                for elem in event_elements:
+                    href = elem['href']
+                    title = elem.get_text(strip=True) or None
+                    
+                    if "sportshub.stream/event" in href and "live" in (title.lower() if title else ""):
+                        events.append((href, title))
+                    elif "acestream.me" in url and "acestream://" in href:
+                        events.append((href, title))
+                    elif "acestream.live" in url and "acestream://" in href:
+                        events.append((href, title))
+            except Exception as e:
+                print(f"{url} için hata: {str(e)}")
+                continue
 
-        # Örnek olarak popüler bir maç arat
-        search_queries = ["Sevilla", "Arsenal", "Bologna"]  # Canlı maç tahminleri
+        # search-ace.stream'den ek arama
+        search_queries = ["Sevilla", "Arsenal", "Bologna"]
         for query in search_queries:
             search_results = await search_ace_stream(query)
             events.extend(search_results)
