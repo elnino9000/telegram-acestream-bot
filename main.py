@@ -67,7 +67,7 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         print(f"Bot hatası: {str(e)}")
 
 def main() -> None:
-    application = Application.builder().token(TELEGRAM_API_TOKEN).build(read_timeout=30, write_timeout=30)
+    application = Application.builder().token(TELEGRAM_API_TOKEN).build()  # Timeout parametreleri kaldırıldı
     application.add_handler(CommandHandler("acestream", acestream))
     print("Bot çalışıyor...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
