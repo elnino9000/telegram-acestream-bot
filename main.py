@@ -9,8 +9,8 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     sources = [
         "https://acestream.me/",
         "https://www.acestream.live/",
-        "https://livefootballol.me/acestream/",
-        "https://www.football-live.stream/acestream-links"
+        "https://acestream.online/",
+        "https://www.livefootball.ws/acestream.html"
     ]
     try:
         events = []
@@ -23,6 +23,7 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 soup = BeautifulSoup(response.text, 'html.parser')
 
                 event_elements = soup.find_all('a', href=True)
+                source_links = 0
                 for elem in event_elements:
                     href = elem['href']
                     title = elem.get_text(strip=True) or None
@@ -37,7 +38,8 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                             except:
                                 title = "Maç"
                         events.append((href, title))
-
+                        source_links += 1
+                print(f"{url}: {source_links} etkinlik bulundu.")
             except Exception as e:
                 print(f"{url} için hata: {str(e)}")
                 continue
