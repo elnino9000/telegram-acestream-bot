@@ -3,20 +3,15 @@ from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-# Telegram bot token'ı
 TELEGRAM_API_TOKEN = "8193746104:AAHsdMqrC-CO0ZGe0hnj18mgTcuTcxrH0-I"
 
-# /acestream komutu için fonksiyon
 async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """AceStream linklerini scrape et ve sadece link olanları gönder."""
     url = "https://soccer9.sportshub.stream/"
     try:
-        # Siteye bağlan
         response = requests.get(url)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Tüm maçları bul
         events = []
         event_elements = soup.find_all('a', href=True)
         for elem in event_elements:
@@ -29,10 +24,14 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("Şu anda canlı etkinlik bulunamadı.")
             return
 
-        # Sadece AceStream linki olan maçları ekle
+        # Tekrarları önlemek için set kullanıyoruz
+        seen_titles = set()
         message = "Canlı Maçlar ve AceStream Linkleri:\n"
         found_links = False
-        for event_url, event_title in events:  # Tüm maçlar, limit yok
+        for event_url, event_title in events:
+            if event_title in seen_titles:
+                continue  # Tekrar eden maçı atla
+            seen_titles.add(event_title)
             try:
                 full_url = f"https://sportshub.stream{event_url}" if not event_url.startswith("http") else event_url
                 event_response = requests.get(full_url)
@@ -43,15 +42,13 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     if "acestream://" in link['href']:
                         acestream_links.append(link['href'])
 
-                # Sadece link varsa mesaj’a ekle
                 if acestream_links:
                     message += f"\n{event_title}:\n" + "\n".join(acestream_links[:3]) + "\n"
                     found_links = True
 
             except Exception as e:
-                print(f"{event_title} için hata: {str(e)}")  # Hataları log’a yaz, Telegram’a yazma
+                print(f"{event_title} için hata: {str(e)}")
 
-        # Mesajı 4000 karakterlik parçalara böl ve gönder
         if not found_links:
             await update.message.reply_text("Şu anda AceStream linki olan maç bulunamadı.")
         else:
@@ -68,9 +65,7 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f"Bir hata oluştu: {str(e)}")
         print(f"Bot hatası: {str(e)}")
 
-# Ana fonksiyon
 def main() -> None:
-    """Botu başlat."""
     application = Application.builder().token(TELEGRAM_API_TOKEN).build()
     application.add_handler(CommandHandler("acestream", acestream))
     print("Bot çalışıyor...")
