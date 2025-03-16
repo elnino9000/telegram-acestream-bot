@@ -8,7 +8,7 @@ TELEGRAM_API_TOKEN = "8193746104:AAHsdMqrC-CO0ZGe0hnj18mgTcuTcxrH0-I"
 
 # /acestream komutu için fonksiyon
 async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """AceStream linklerini scrape et ve gönder."""
+    """AceStream linklerini scrape et ve sadece link olanları gönder."""
     url = "https://soccer9.sportshub.stream/"
     try:
         # Siteye bağlan
@@ -29,8 +29,9 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("Şu anda canlı etkinlik bulunamadı.")
             return
 
-        # Tüm maçları işle
+        # Sadece AceStream linki olan maçları ekle
         message = "Canlı Maçlar ve AceStream Linkleri:\n"
+        found_links = False
         for event_url, event_title in events:  # Tüm maçlar, limit yok
             try:
                 full_url = f"https://sportshub.stream{event_url}" if not event_url.startswith("http") else event_url
@@ -42,23 +43,27 @@ async def acestream(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     if "acestream://" in link['href']:
                         acestream_links.append(link['href'])
 
+                # Sadece link varsa mesaj’a ekle
                 if acestream_links:
                     message += f"\n{event_title}:\n" + "\n".join(acestream_links[:3]) + "\n"
-                else:
-                    message += f"\n{event_title}: AceStream linki bulunamadı.\n"
+                    found_links = True
+
             except Exception as e:
-                message += f"\n{event_title}: Hata: {str(e)}\n"
+                print(f"{event_title} için hata: {str(e)}")  # Hataları log’a yaz, Telegram’a yazma
 
         # Mesajı 4000 karakterlik parçalara böl ve gönder
-        max_length = 4000
-        if len(message) > max_length:
-            parts = [message[i:i + max_length] for i in range(0, len(message), max_length)]
-            for part in parts:
-                await update.message.reply_text(part)
+        if not found_links:
+            await update.message.reply_text("Şu anda AceStream linki olan maç bulunamadı.")
         else:
-            await update.message.reply_text(message)
+            max_length = 4000
+            if len(message) > max_length:
+                parts = [message[i:i + max_length] for i in range(0, len(message), max_length)]
+                for part in parts:
+                    await update.message.reply_text(part)
+            else:
+                await update.message.reply_text(message)
 
-        print(f"Bot çalışıyor: {len(events)} etkinlik bulundu, mesaj gönderildi.")
+        print(f"Bot çalışıyor: {len(events)} etkinlik tarandı, AceStream linki olanlar gönderildi.")
     except Exception as e:
         await update.message.reply_text(f"Bir hata oluştu: {str(e)}")
         print(f"Bot hatası: {str(e)}")
